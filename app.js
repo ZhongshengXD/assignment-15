@@ -3,14 +3,26 @@ const crafts = require('./record');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const Joi = require('joi');
+const cors = require('cors'); 
+
+
+const schema = Joi.object({
+    image: Joi.string().required(),
+    name: Joi.string().required(),
+    description: Joi.string().required(),
+    supplies: Joi.array().items(Joi.string().required()).required()
+});
+
 
 const app = express();
+app.use(cors());
 
 const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
+    destination: function (req, file, cb) {
         cb(null, 'static/crafts')
     },
-    filename: function(req, file, cb) {
+    filename: function (req, file, cb) {
         cb(null, file.originalname)
     }
 })
@@ -37,17 +49,25 @@ app.get('/api/crafts', (req, res) => {
 app.post('/api/crafts', upload.single('file'), (req, res) => {
     // file to static/crafts 
     const filePath = path.join('static/crafts', req.file.originalname);
-    fs.rename(req.file.path, filePath, function(err) {
+    fs.rename(req.file.path, filePath, async function (err) {
         if (err) {
             console.log(err);
             res.status(500).send('File upload failed');
             return;
         }
-        
+
         req.body.supplies = JSON.parse(req.body.supplies);
         req.body.image = req.file.originalname;
 
-        console.log(req.body);
+        // Validate the data
+        try {
+            await schema.validateAsync(req.body);
+        } catch (err) {
+            console.error('Validation failed:', err.details);
+            res.status(400).send('Invalid data');
+            return;
+        }
+
 
         // req.body contains the text fields
         crafts.push(req.body);

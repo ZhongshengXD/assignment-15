@@ -72,15 +72,12 @@
         addModalListeners();
     </script>
     <script>
-
-
-        function addRecord() {
+        async function addRecord() {
             var form = document.getElementById('craftForm');
             var formData = new FormData(form);
             for (var pair of formData.entries()) {
                 console.log(pair[0] + ', ' + pair[1]);
             }
-
 
             var data = new FormData();
             data.append('file', formData.get('image'));
@@ -88,20 +85,22 @@
             data.append('description', formData.get('description'));
             data.append('supplies', JSON.stringify(formData.getAll('supplies')));
 
-            fetch('/api/crafts', {
-                method: 'POST',
-                body: data
-            }).then(function (response) {
+            try {
+                const response = await fetch('/api/crafts', {
+                    method: 'POST',
+                    body: data
+                });
+
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                return response.text();
-            }).then(function (data) {
-                console.log('Record and file added to the database:', data);
+
+                const responseData = await response.text();
+                console.log('Record and file added to the database:', responseData);
                 window.location.reload();
-            }).catch(function (error) {
+            } catch (error) {
                 console.error('There has been a problem with your fetch operation:', error);
-            });
+            }
         }
         function handleImageChange(event) {
             var reader = new FileReader();
